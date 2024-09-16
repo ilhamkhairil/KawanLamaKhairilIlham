@@ -2,36 +2,33 @@ using KawanLamaKhairilIlham.Data;
 using KawanLamaKhairilIlham.Services;
 using KawanLamaKhairilIlham.Services.Interfaces;
 using KhairilKawanLama.Services;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Retrieve the connection string from configuration
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 Console.WriteLine($"Using connection string: {connectionString}");
 
+// Configure DbContext with SQLite
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(connectionString));
-builder.Services.AddScoped<IUserService, UserService>(); // Add UserService
 
-builder.Services.AddDefaultIdentity<IdentityUser>(options =>
-{
-    options.Password.RequireDigit = true;
-    options.Password.RequireUppercase = false;
-    options.Password.RequiredLength = 6;
-})
-    .AddEntityFrameworkStores<AppDbContext>()
-    .AddDefaultTokenProviders();
+// Register custom services
+builder.Services.AddScoped<IUserService, UserService>(); // Register UserService
+builder.Services.AddScoped<IToDoService, ToDoService>(); // Register ToDoService
 
-builder.Services.AddScoped<IToDoService, ToDoService>();
+// Configure logging
 builder.Logging.AddConsole();
 
+// Add Razor Pages and Blazor Server components
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddSingleton<WeatherForecastService>();
 
 var app = builder.Build();
 
+// Configure middleware
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
@@ -41,7 +38,7 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
-app.UseAuthentication();
+app.UseAuthentication(); // Ensure this is configured properly
 app.UseAuthorization();
 
 app.MapBlazorHub();

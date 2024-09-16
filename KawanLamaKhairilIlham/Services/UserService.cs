@@ -1,13 +1,17 @@
-﻿using System;
+﻿using BCrypt.Net;
+using System;
 using System.Threading.Tasks;
 using KawanLamaKhairilIlham.Data;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Threading.Tasks;
 using System.Security.Cryptography;
 using System.Text;
 using KawanLamaKhairilIlham.Services.Interfaces;
 
 namespace KawanLamaKhairilIlham.Services
 {
+
     public class UserService : IUserService
     {
         private readonly AppDbContext _context;
@@ -50,17 +54,19 @@ namespace KawanLamaKhairilIlham.Services
             if (user == null)
                 return false;
 
-            return user.PasswordHash == HashPassword(password);
+            return VerifyPassword(password, user.PasswordHash);
         }
 
         public string HashPassword(string password)
         {
-            using (var sha256 = SHA256.Create())
-            {
-                var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-                return Convert.ToBase64String(bytes);
-            }
+            // Hash password using bcrypt
+            return BCrypt.Net.BCrypt.HashPassword(password);
+        }
+
+        public bool VerifyPassword(string password, string hashedPassword)
+        {
+            // Verify password using bcrypt
+            return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
         }
     }
-
 }
