@@ -1,0 +1,63 @@
+﻿@page "/todos"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Identity
+@using KawanLamaKhairilIlham.Services.Interfaces
+@using KawanLamaKhairilIlham.Data
+@inject IToDoService ToDoService
+@inject NavigationManager Navigation
+@inject SignInManager<IdentityUser> SignInManager
+
+<h3>To-Do List</h3>
+
+@if (toDoItems == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <ul>
+        @foreach (var todo in toDoItems)
+        {
+            <li>
+                @todo.Subject - @todo.Status
+                <button @onclick="() => EditToDo(todo.Id)">Edit</button>
+                <button @onclick="() => MarkAsDone(todo.Id)">Mark as Done</button>
+                <button @onclick="() => DeleteToDo(todo.Id)">Delete</button>
+            </li>
+        }
+    </ul>
+}
+
+<button @onclick="CreateToDo">Create New To-Do</button>
+
+@code {
+    private List<TodoData> toDoItems;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await SignInManager.UserManager.GetUserAsync(SignInManager.Context.User);
+        toDoItems = await ToDoService.GetToDosForUserAsync(int.Parse(user.Id));
+    }
+
+    private void CreateToDo()
+    {
+        Navigation.NavigateTo("/create-todo");
+    }
+
+    private void EditToDo(int id)
+    {
+        Navigation.NavigateTo($"/edit-todo/{id}");
+    }
+
+    private async Task MarkAsDone(int id)
+    {
+        await ToDoService.MarkToDoAsync(id, ToDoStatus.Done);
+        toDoItems = await ToDoService.GetToDosForUserAsync(int.Parse(SignInManager.UserManager.GetUserId(SignInManager.Context.User)));
+    }
+
+    private async Task DeleteToDo(int id)
+    {
+        await ToDoService.DeleteToDoAsync(id, int.Parse(SignInManager.UserManager.GetUserId(SignInManager.Context.User)));
+        toDoItems = await ToDoService.GetToDosForUserAsync(int.Parse(SignInManager.UserManager.GetUserId(SignInManager.Context.User)));
+    }
+}
