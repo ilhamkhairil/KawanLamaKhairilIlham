@@ -1,3 +1,28 @@
+**TO-DO Web Application**
+
+This project is a TO-DO web application built with ASP.NET Core 6.0, Entity Framework Core, and SQLite. It allows multiple users to register, login, and manage their to-do activities. The application is containerized using Docker for easy deployment.
+
+**Features**
+- User Registration
+- User Login
+- Create, view, edit, and delete to-do items
+- Mark to-do items as Done, Canceled, or Unmarked
+- SQLite database integration
+- Unit tests for application functionality
+- Containerization using Docker
+
+**Technologies Used**
+
+- ASP.NET Core 6.0
+- Blazor/Razor Pages for UI
+- Entity Framework Core with SQLite
+- Docker for containerization
+- xUnit for unit testing
+- Prerequisites
+- .NET 6.0 SDK
+- Docker
+- Git
+
 Run The Project
 You will need the following tools:
 •	Visual Studio 2022
