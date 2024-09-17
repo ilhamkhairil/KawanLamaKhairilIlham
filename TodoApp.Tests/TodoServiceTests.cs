@@ -3,12 +3,16 @@ using Microsoft.EntityFrameworkCore;
 using KawanLamaKhairilIlham.Data;
 using Xunit;
 using KhairilKawanLama.Services;
+using KawanLamaKhairilIlham.Services.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace TodoApp.Tests
 {
     public class TodoServiceTests
     {
         private readonly AppDbContext _context;
+        private readonly ILogger<ToDoService> _logger;
+        private readonly IUserService _userService;
 
         public TodoServiceTests()
         {
@@ -23,7 +27,7 @@ namespace TodoApp.Tests
         public async Task CanAddTodo()
         {
             // Arrange
-            var service = new ToDoService(_context);
+            var service = new ToDoService(_context, _logger, _userService);
             var todo = new TodoData { Subject = "Test", Description = "Test Desc" };
 
             // Act

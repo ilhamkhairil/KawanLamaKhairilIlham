@@ -14,7 +14,7 @@ namespace KawanLamaKhairilIlham.Data
 
         // Foreign Key to User
         public int UserId { get; set; } // Update to string
-        public IdentityUser User { get; set; } // Update to IdentityUser
+        public UserData User { get; set; }
     }
 
     public enum ToDoStatus

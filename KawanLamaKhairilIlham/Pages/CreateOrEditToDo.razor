@@ -1,8 +1,9 @@
-﻿@page "/create-or-edit-todo"
+﻿@page "/createOrEditToDo"
 @using KawanLamaKhairilIlham.Services.Interfaces
 @using KawanLamaKhairilIlham.Data
 @inject NavigationManager Navigation
 @inject IToDoService ToDoService
+@inject Blazored.SessionStorage.ISessionStorageService session
 
 <h3>Create or Edit ToDo</h3>
 
@@ -24,26 +25,25 @@
 </EditForm>
 
 @code {
-    private TodoData toDoModel = new TodoData(); // Membuat instance baru dari ToDoModel
+    private TodoData toDoModel = new TodoData(); 
 
     protected override async Task OnInitializedAsync()
     {
-        // Logic untuk inisialisasi data, misalnya saat mengedit item yang sudah ada
-        // Bisa memuat data to-do yang ada jika perlu
+
     }
 
     private async Task HandleValidSubmit()
     {
         if (toDoModel.Id == 0)
         {
-            // Menambahkan to-do baru
+            var sessionUser = await session.GetItemAsync<UserData>("SessionUser");
+            toDoModel.UserId = sessionUser.Id;
             await ToDoService.CreateToDoAsync(toDoModel);
         }
         else
         {
-            // Mengupdate to-do yang sudah ada
             await ToDoService.UpdateToDoAsync(toDoModel);
         }
-        Navigation.NavigateTo("/todo-list");
+        Navigation.NavigateTo("/toDoList");
     }
 }

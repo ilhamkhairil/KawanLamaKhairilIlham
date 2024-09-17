@@ -3,6 +3,7 @@
 @using KawanLamaKhairilIlham.Services.Interfaces
 @inject IUserService UserService
 @inject NavigationManager Navigation
+@inject Blazored.SessionStorage.ISessionStorageService session
 
 <h3>Login</h3>
 
@@ -36,16 +37,22 @@
     private async Task HandleLogin()
     {
         var isValidUser = await UserService.ValidateUserAsync(loginModel.UserName, loginModel.Password);
+        var userData = await UserService.GetUserByUserNameAsync(loginModel.UserName);
 
         if (isValidUser)
         {
-            Navigation.NavigateTo("/todos");
+            if (userData != null)
+            {
+                await session.SetItemAsync("SessionUser", userData);
+                Navigation.NavigateTo("/toDoList");
+            }
         }
         else
         {
             ErrorMessage = "Invalid login attempt.";
         }
     }
+
 
     private void RedirectToRegister()
     {

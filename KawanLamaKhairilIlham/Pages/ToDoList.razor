@@ -1,63 +1,171 @@
-﻿@page "/todos"
-@attribute [Authorize]
-@using Microsoft.AspNetCore.Identity
+﻿@page "/ToDoList"
+@using Microsoft.AspNetCore.Components.Authorization
+@using KawanLamaKhairilIlham.Services
 @using KawanLamaKhairilIlham.Services.Interfaces
 @using KawanLamaKhairilIlham.Data
 @inject IToDoService ToDoService
+@inject IUserService UserService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager Navigation
-@inject SignInManager<IdentityUser> SignInManager
+@inject Blazored.SessionStorage.ISessionStorageService session
 
-<h3>To-Do List</h3>
+<link href="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
 
-@if (toDoItems == null)
-{
-    <p>Loading...</p>
-}
-else
-{
-    <ul>
-        @foreach (var todo in toDoItems)
-        {
-            <li>
-                @todo.Subject - @todo.Status
-                <button @onclick="() => EditToDo(todo.Id)">Edit</button>
-                <button @onclick="() => MarkAsDone(todo.Id)">Mark as Done</button>
-                <button @onclick="() => DeleteToDo(todo.Id)">Delete</button>
-            </li>
-        }
-    </ul>
-}
-
-<button @onclick="CreateToDo">Create New To-Do</button>
+<div class="container">
+    <div class="row clearfix">
+        <div class="col-md-12 table-responsive">
+            <table class="table table-bordered table-hover table-sortable" id="tab_logic">
+                <thead>
+                    <tr>
+                        <th class="text-center">Activities No</th>
+                        <th class="text-center">Subject</th>
+                        <th class="text-center">Description</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Created At</th>
+                        <th class="text-center">Options</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (toDoItems != null)
+                    {
+                        @foreach (var todo in toDoItems)
+                        {
+                            <tr id="addr@(todo.Id)">
+                                <td data-name="activitiesNo">@todo.ActivitiesNo</td>
+                                <td data-name="subject">@todo.Subject</td>
+                                <td data-name="description">@todo.Description</td>
+                                <td data-name="status">@todo.Status</td>
+                                <td data-name="createdAt">@todo.CreatedAt.ToString("g")</td>
+                                <td data-name="options">
+                                    <button @onclick="() => EditToDo(todo.Id)" class="btn btn-warning">Edit</button>
+                                    <button @onclick="() => MarkAsDone(todo.Id)" class="btn btn-success">Mark as Done</button>
+                                    <button @onclick="() => DeleteToDo(todo.Id)" class="btn btn-danger">Delete</button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <a id="add_row" class="btn btn-primary float-right">Add Row</a>
+</div>
 
 @code {
     private List<TodoData> toDoItems;
+    private ErrorMessage errorMessage;
+    private string userName;
 
     protected override async Task OnInitializedAsync()
     {
-        var user = await SignInManager.UserManager.GetUserAsync(SignInManager.Context.User);
-        toDoItems = await ToDoService.GetToDosForUserAsync(int.Parse(user.Id));
+        try
+        {
+            var sessionUser = await session.GetItemAsync<UserData>("SessionUser");
+
+            if (sessionUser?.Id == null)
+            {
+                errorMessage.Show("User is not authenticated.");
+                Navigation.NavigateTo("/login");
+                return;
+            }
+
+            userName = sessionUser.UserName;
+
+            if (string.IsNullOrEmpty(userName))
+            {
+                errorMessage.Show("User name is missing.");
+                return;
+            }
+
+            var userData = await UserService.GetUserByUserNameAsync(userName);
+
+            if (userData == null)
+            {
+                errorMessage.Show("User data not found. Please contact support.");
+                return;
+            }
+
+            toDoItems = await ToDoService.GetToDosForUserAsync(userData.Id);
+        }
+        catch (Exception ex)
+        {
+            errorMessage.Show($"An error occurred: {ex.Message}");
+        }
     }
 
     private void CreateToDo()
     {
-        Navigation.NavigateTo("/create-todo");
+        Navigation.NavigateTo("/createOrEditToDo");
     }
 
     private void EditToDo(int id)
     {
-        Navigation.NavigateTo($"/edit-todo/{id}");
+        Navigation.NavigateTo($"/createOrEditToDo/{id}");
     }
 
     private async Task MarkAsDone(int id)
     {
-        await ToDoService.MarkToDoAsync(id, ToDoStatus.Done);
-        toDoItems = await ToDoService.GetToDosForUserAsync(int.Parse(SignInManager.UserManager.GetUserId(SignInManager.Context.User)));
+        try
+        {
+            var sessionUser = await session.GetItemAsync<UserData>("SessionUser");
+            if (sessionUser != null)
+            {
+                await ToDoService.MarkToDoAsync(id, ToDoStatus.Done);
+                toDoItems = await ToDoService.GetToDosForUserAsync(sessionUser.Id);
+            }
+            else
+            {
+                errorMessage.Show("User data not found.");
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage.Show($"An error occurred: {ex.Message}");
+        }
+    }
+
+    private async Task MarkAsUnmarked(int id)
+    {
+        try
+        {
+            var sessionUser = await session.GetItemAsync<UserData>("SessionUser");
+            if (sessionUser != null)
+            {
+                await ToDoService.MarkToDoAsync(id, ToDoStatus.Unmarked);
+                toDoItems = await ToDoService.GetToDosForUserAsync(sessionUser.Id);
+            }
+            else
+            {
+                errorMessage.Show("User data not found.");
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage.Show($"An error occurred: {ex.Message}");
+        }
     }
 
     private async Task DeleteToDo(int id)
     {
-        await ToDoService.DeleteToDoAsync(id, int.Parse(SignInManager.UserManager.GetUserId(SignInManager.Context.User)));
-        toDoItems = await ToDoService.GetToDosForUserAsync(int.Parse(SignInManager.UserManager.GetUserId(SignInManager.Context.User)));
+        try
+        {
+            var sessionUser = await session.GetItemAsync<UserData>("SessionUser");
+            if (sessionUser != null)
+            {
+                await ToDoService.DeleteToDoAsync(id, sessionUser.Id);
+                toDoItems = await ToDoService.GetToDosForUserAsync(sessionUser.Id);
+            }
+            else
+            {
+                errorMessage.Show("User data not found.");
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage.Show($"An error occurred: {ex.Message}");
+        }
     }
 }

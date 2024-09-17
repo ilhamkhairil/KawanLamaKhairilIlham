@@ -1,0 +1,22 @@
+﻿@if (!string.IsNullOrEmpty(Message))
+{
+    <div class="alert alert-danger">
+        <strong>Error:</strong> @Message
+    </div>
+}
+
+@code {
+    private string Message { get; set; }
+
+    public void Show(string message)
+    {
+        Message = message;
+        StateHasChanged(); // Untuk me-refresh UI dan menampilkan pesan error
+    }
+
+    public void Clear()
+    {
+        Message = string.Empty;
+        StateHasChanged(); // Untuk me-refresh UI dan menghapus pesan error
+    }
+}

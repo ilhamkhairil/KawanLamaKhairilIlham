@@ -1,44 +1,80 @@
+using Blazored.SessionStorage;
 using KawanLamaKhairilIlham.Data;
 using KawanLamaKhairilIlham.Services;
 using KawanLamaKhairilIlham.Services.Interfaces;
 using KhairilKawanLama.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Retrieve the connection string from configuration
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-Console.WriteLine($"Using connection string: {connectionString}");
+// Tambahkan layanan HttpContextAccessor
+builder.Services.AddHttpContextAccessor();
 
-// Configure DbContext with SQLite
+// Tambahkan layanan untuk session
+builder.Services.AddDistributedMemoryCache(); // Memerlukan memory cache
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30); // Waktu sesi
+    options.Cookie.HttpOnly = true; // Hanya Http
+    options.Cookie.IsEssential = true; // Cookie penting
+});
+
+// Konfigurasi DbContext dengan SQLite
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(connectionString));
 
-// Register custom services
-builder.Services.AddScoped<IUserService, UserService>(); // Register UserService
-builder.Services.AddScoped<IToDoService, ToDoService>(); // Register ToDoService
+// Daftarkan layanan kustom
+builder.Services.AddScoped<IUserService, UserService>(); // Daftarkan UserService
+builder.Services.AddScoped<IToDoService, ToDoService>(); // Daftarkan ToDoService
+builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 
-// Configure logging
+// Konfigurasi autentikasi
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+})
+.AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
+{
+    options.LoginPath = "/login";
+    options.LogoutPath = "/logout";
+    options.AccessDeniedPath = "/access-denied";
+});
+
+builder.Services.AddAuthorization();
+
+// Konfigurasi logging
 builder.Logging.AddConsole();
 
-// Add Razor Pages and Blazor Server components
+// Tambahkan Razor Pages dan Blazor Server
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
+builder.Services.AddBlazoredSessionStorage();
+
+// Tambahkan WeatherForecastService sebagai singleton
 builder.Services.AddSingleton<WeatherForecastService>();
 
 var app = builder.Build();
 
-// Configure middleware
+// Konfigurasi middleware
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
     app.UseHsts();
 }
 
+// Middleware untuk session harus dipanggil sebelum routing
+app.UseSession();
+
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
-app.UseAuthentication(); // Ensure this is configured properly
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapBlazorHub();
