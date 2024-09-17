@@ -15,6 +15,12 @@
 <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
 
 <div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <button class="btn btn-danger float-right" @onclick="Logout">Logout</button>
+            <button class="btn btn-primary float-right mr-2" @onclick="CreateToDo">Add Row</button>
+        </div>
+    </div>
     <div class="row clearfix">
         <div class="col-md-12 table-responsive">
             <table class="table table-bordered table-hover table-sortable" id="tab_logic">
@@ -51,7 +57,6 @@
             </table>
         </div>
     </div>
-    <a id="add_row" class="btn btn-primary float-right">Add Row</a>
 </div>
 
 @code {
@@ -167,5 +172,11 @@
         {
             errorMessage.Show($"An error occurred: {ex.Message}");
         }
+    }
+
+    private async Task Logout()
+    {
+        await session.RemoveItemAsync("SessionUser");
+        Navigation.NavigateTo("/login");
     }
 }
